@@ -31,11 +31,20 @@ public class EventServer {
     public static Server server;
     public static SessionManager manager = new SessionManager();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        
+        if(args.length != 1 ) {
+            throw new Exception();
+        }
+        
+        System.out.println(" running on port " + args[0]);
+        
         
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8087);
+        
+        connector.setPort(Integer.parseInt(args[0]));
+        
         server.addConnector(connector);
 
         // Setup the basic application "context" for this application at "/"
