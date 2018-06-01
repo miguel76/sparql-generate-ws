@@ -35,6 +35,7 @@ public class StopServlet extends HttpServlet {
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        System.out.println("STOPPPPPPPPP");
         new Thread() {
             public void run() {
                 try {

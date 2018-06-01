@@ -44,7 +44,6 @@ public class EventServer {
         context.setContextPath("/");
         server.setHandler(context);
         context.addServlet(StopServlet.class, "/stop");
-
         try {
             // Initialize javax.websocket layer
             ServerContainer wscontainer = WebSocketServerContainerInitializer.configureContext(context);

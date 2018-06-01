@@ -17,16 +17,16 @@ package com.github.thesmartenergy.sparql.generate.ws;
 
 import com.github.thesmartenergy.sparql.generate.jena.cli.Response;
 import com.google.gson.Gson;
+
+import javax.websocket.Session;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.websocket.Session;
 
 /**
- *
  * @author maxime.lefrancois
  */
 public class SessionManager {
@@ -61,7 +61,7 @@ public class SessionManager {
     }
 
     private void send() {
-        if (session != null && !responses.isEmpty()) {
+        if (session != null && !responses.isEmpty() && session.isOpen()) {
             System.out.println(responses.size());
             try {
                 session.getBasicRemote().sendText(gson.toJson(responses));
