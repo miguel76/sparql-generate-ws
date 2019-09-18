@@ -17,6 +17,9 @@ package com.github.thesmartenergy.sparql.generate.ws;
 
 import com.github.thesmartenergy.sparql.generate.jena.engine.PlanFactory;
 import com.github.thesmartenergy.sparql.generate.jena.engine.RootPlan;
+import com.github.thesmartenergy.sparql.generate.jena.stream.LocatorStringMap;
+import com.github.thesmartenergy.sparql.generate.jena.stream.SPARQLGenerateStreamManager;
+import com.github.thesmartenergy.sparql.generate.jena.SPARQLGenerate;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.HttpURLConnection;
@@ -34,6 +37,8 @@ import javax.servlet.ServletException;
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  *
@@ -55,6 +60,7 @@ public class Transform extends HttpServlet {
         doTransform(
                 request.getParameterValues("query"),
                 request.getParameterValues("queryurl"),
+                request.getParameterValues("document"),
                 response);
     }
 
@@ -63,30 +69,54 @@ public class Transform extends HttpServlet {
       plan.exec(EMPTY_MODEL, model);
     }
 
-    private void doTransform(String[] queries, String[] queryurls, HttpServletResponse response) throws IOException {
-        final ExecutorService service = Executors.newSingleThreadExecutor();
-        Model model = ModelFactory.createDefaultModel();
-        if (queries != null) {
-          for (String query: queries) {
-            execQuery(model, query);
-          }
-        }
-        if (queryurls != null) {
-          for (String queryurl: queryurls) {
-            URL url = new URL(queryurl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            String query = IOUtils.toString(conn.getInputStream());
-            execQuery(model, query);
+    private void doTransform(
+        String[] queries, String[] queryurls,
+        String[] documents,
+        HttpServletResponse response) throws IOException {
+      final ExecutorService service = Executors.newSingleThreadExecutor();
+      Model model = ModelFactory.createDefaultModel();
+
+      if (documents != null) {
+        LocatorStringMap locator = new LocatorStringMap();
+        for (String documentStr: documents) {
+          try {
+            JSONObject document = new JSONObject(documentStr);
+            locator.put(
+                document.getString("name"),
+                document.getString("text"),
+                document.getString("mediaType"));
+          } catch(JSONException e) {
+            e.printStackTrace();
           }
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("text/turtle");
-        Writer responseWriter = response.getWriter();
-        model.write(responseWriter, "TTL", "http://example.org/");
-        responseWriter.close();
+        // initialize the StreamManager
+        SPARQLGenerateStreamManager sm = SPARQLGenerateStreamManager.makeStreamManager(locator);
+        SPARQLGenerate.setStreamManager(sm);
+
+      }
+
+      if (queries != null) {
+        for (String query: queries) {
+          execQuery(model, query);
+        }
+      }
+      if (queryurls != null) {
+        for (String queryurl: queryurls) {
+          URL url = new URL(queryurl);
+          HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+          conn.setRequestMethod("GET");
+          String query = IOUtils.toString(conn.getInputStream());
+          execQuery(model, query);
+        }
+      }
+
+      response.setStatus(HttpServletResponse.SC_OK);
+      response.setCharacterEncoding("UTF-8");
+      response.setContentType("text/turtle");
+      Writer responseWriter = response.getWriter();
+      model.write(responseWriter, "TTL", "http://example.org/");
+      responseWriter.close();
     }
 
 }
