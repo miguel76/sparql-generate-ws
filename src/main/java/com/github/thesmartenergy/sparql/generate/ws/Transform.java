@@ -25,6 +25,8 @@ import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
+import java.util.List;
+import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -37,6 +39,8 @@ import javax.servlet.ServletException;
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.QuerySolutionMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -61,20 +65,60 @@ public class Transform extends HttpServlet {
                 request.getParameterValues("query"),
                 request.getParameterValues("queryurl"),
                 request.getParameterValues("document"),
+                request.getParameterValues("bindings"),
                 response);
     }
 
-    private void execQuery(Model model, String query) {
+    private void execQuery(Model model, String query, QuerySolution initialBindings) {
       RootPlan plan = PlanFactory.create(query);
-      plan.exec(EMPTY_MODEL, model);
+      plan.exec(EMPTY_MODEL, initialBindings, model);
+    }
+
+    private RDFNode jsonToRDFNode(JSONObject json) {
+      // if (json instanceof JSONObject) {
+      RDFNode result = null;
+      String type = json.getString("type");
+      String value = json.getString("value");
+
+      // RDF Term	JSON form
+      // IRI I	{"type": "uri", "value": "I"}
+      // Literal S	{"type": "literal","value": "S"}
+      // Literal S with language tag L	{ "type": "literal", "value": "S", "xml:lang": "L"}
+      // Literal S with datatype IRI D	{ "type": "literal", "value": "S", "datatype": "D"}
+      // Blank node, label B	{"type": "bnode", "value": "B"}
+      if (type.equals("uri")) {
+      } else if (type.equals("literal")) {
+        String datatype = json.getString("datatype");
+        String lang = json.getString("xml:lang");
+        if (datatype != null) {
+          // result = NodeFactory.createLiteral(value, lang, RDFDatatype dtype);
+        }
+      } else if (type.equals("bnode")) {
+
+      }
+      return result;
+      // } else (json instanceof String)
     }
 
     private void doTransform(
         String[] queries, String[] queryurls,
-        String[] documents,
+        String[] documents, String[] bindings,
         HttpServletResponse response) throws IOException {
       final ExecutorService service = Executors.newSingleThreadExecutor();
       Model model = ModelFactory.createDefaultModel();
+      List<QuerySolutionMap> initialBindings = new LinkedList<QuerySolutionMap>();
+
+      if (bindings != null) {
+        for (String bindingsStr: bindings) {
+          QuerySolutionMap currBindings = new QuerySolutionMap();
+          initialBindings.add(currBindings);
+          JSONObject bindingsJson = new JSONObject(bindingsStr);
+          for (key: bindingsJson.keySet()) {
+            // currBindings.add(key, jsonToRDFNode(bindingsJson.get(key)));
+            currBindings.add(key, jsonToRDFNode(bindingsJson.getJSONObject(key)));
+          }
+        }
+      }
 
       if (documents != null) {
         LocatorStringMap locator = new LocatorStringMap();
@@ -98,7 +142,7 @@ public class Transform extends HttpServlet {
 
       if (queries != null) {
         for (String query: queries) {
-          execQuery(model, query);
+          execQuery(model, query, initialBindings);
         }
       }
       if (queryurls != null) {
@@ -107,7 +151,7 @@ public class Transform extends HttpServlet {
           HttpURLConnection conn = (HttpURLConnection) url.openConnection();
           conn.setRequestMethod("GET");
           String query = IOUtils.toString(conn.getInputStream());
-          execQuery(model, query);
+          execQuery(model, query, initialBindings);
         }
       }
 
