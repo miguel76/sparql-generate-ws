@@ -37,8 +37,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import org.apache.commons.io.IOUtils;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.json.JSONException;
@@ -74,30 +77,42 @@ public class Transform extends HttpServlet {
       plan.exec(EMPTY_MODEL, initialBindings, model);
     }
 
-    private RDFNode jsonToRDFNode(JSONObject json) {
-      // if (json instanceof JSONObject) {
+    // private RDFNode jsonToRDFNode(JSONObject json, Model model) {
+    private RDFNode jsonToRDFNode(Object object, Model model) {
       RDFNode result = null;
-      String type = json.getString("type");
-      String value = json.getString("value");
+      if (object instanceof JSONObject) {
+        JSONObject json = (JSONObject) object;
 
-      // RDF Term	JSON form
-      // IRI I	{"type": "uri", "value": "I"}
-      // Literal S	{"type": "literal","value": "S"}
-      // Literal S with language tag L	{ "type": "literal", "value": "S", "xml:lang": "L"}
-      // Literal S with datatype IRI D	{ "type": "literal", "value": "S", "datatype": "D"}
-      // Blank node, label B	{"type": "bnode", "value": "B"}
-      if (type.equals("uri")) {
-      } else if (type.equals("literal")) {
-        String datatype = json.getString("datatype");
-        String lang = json.getString("xml:lang");
-        if (datatype != null) {
-          // result = NodeFactory.createLiteral(value, lang, RDFDatatype dtype);
+        String type = json.getString("type");
+        String value = json.getString("value");
+
+        if (type.equals("uri")) {
+          result = model.createResource(value);
+        } else if (type.equals("literal")) {
+          try {
+            String datatype = json.getString("datatype");
+            result = model.createTypedLiteral(value, NodeFactory.getType(datatype));
+          } catch(JSONException e) {
+            try {
+              String lang = json.getString("xml:lang");
+              result = model.createLiteral(value, lang);
+            } catch(JSONException e2) {
+              result = model.createLiteral(value, false);
+            }
+          }
+        } else if (type.equals("bnode")) {
+          if (value != null) {
+            result = model.createResource(AnonId.create(value));
+          } else {
+            result = model.createResource();
+          }
         }
-      } else if (type.equals("bnode")) {
 
+      } else {
+      	result = model.createTypedLiteral(object);
       }
+
       return result;
-      // } else (json instanceof String)
     }
 
     private void doTransform(
@@ -113,11 +128,14 @@ public class Transform extends HttpServlet {
           QuerySolutionMap currBindings = new QuerySolutionMap();
           initialBindings.add(currBindings);
           JSONObject bindingsJson = new JSONObject(bindingsStr);
-          for (key: bindingsJson.keySet()) {
-            // currBindings.add(key, jsonToRDFNode(bindingsJson.get(key)));
-            currBindings.add(key, jsonToRDFNode(bindingsJson.getJSONObject(key)));
+          for (String key: bindingsJson.keySet()) {
+            currBindings.add(key, jsonToRDFNode(bindingsJson.get(key), model));
+            // currBindings.add(key, jsonToRDFNode(bindingsJson.getJSONObject(key), model));
           }
         }
+      }
+      if (initialBindings.isEmpty()) {
+        initialBindings.add(new QuerySolutionMap());
       }
 
       if (documents != null) {
@@ -142,16 +160,20 @@ public class Transform extends HttpServlet {
 
       if (queries != null) {
         for (String query: queries) {
-          execQuery(model, query, initialBindings);
+          for (QuerySolution currBindings: initialBindings) {
+            execQuery(model, query, currBindings);
+          }
         }
       }
       if (queryurls != null) {
         for (String queryurl: queryurls) {
-          URL url = new URL(queryurl);
-          HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-          conn.setRequestMethod("GET");
-          String query = IOUtils.toString(conn.getInputStream());
-          execQuery(model, query, initialBindings);
+          for (QuerySolution currBindings: initialBindings) {
+            URL url = new URL(queryurl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            String query = IOUtils.toString(conn.getInputStream());
+            execQuery(model, query, currBindings);
+          }
         }
       }
 
