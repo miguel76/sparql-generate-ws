@@ -77,7 +77,6 @@ public class Transform extends HttpServlet {
       plan.exec(EMPTY_MODEL, initialBindings, model);
     }
 
-    // private RDFNode jsonToRDFNode(JSONObject json, Model model) {
     private RDFNode jsonToRDFNode(Object object, Model model) {
       RDFNode result = null;
       if (object instanceof JSONObject) {
@@ -130,7 +129,6 @@ public class Transform extends HttpServlet {
           JSONObject bindingsJson = new JSONObject(bindingsStr);
           for (String key: bindingsJson.keySet()) {
             currBindings.add(key, jsonToRDFNode(bindingsJson.get(key), model));
-            // currBindings.add(key, jsonToRDFNode(bindingsJson.getJSONObject(key), model));
           }
         }
       }
