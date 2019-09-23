@@ -1,0 +1,90 @@
+openapi: "3.0.2"
+info:
+  description: "Web API that offers the functionality of SPARQL-Generate (http://w3id.org/sparql-generate)"
+  version: "1.0.0"
+  title: "SPARQL-Generate Web API"
+#  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "miguel.ceriani@gmail.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - description: Local API
+    url: http://localhost:5050
+paths:
+  /transform:
+    post:
+      summary: "Execute a SPARQL-Generate query"
+      description: "Execute a SPARQL-Generate query"
+      operationId: "execQueryGet"
+      parameters:
+      - in: "query"
+        name: "query"
+        description: "The SPARQL-Generate query(ies) to be executed"
+        required: false
+        content:
+          application/vnd.sparql-generate:
+            example: >
+              PREFIX ite: <http://w3id.org/sparql-generate/iter/>
+              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+              GENERATE {
+                <http://ex.com/{ REPLACE( ?artist , " " , "_" ) }>
+                  a crm:E21_Person;
+                  rdfs:label ?artist .
+              }
+              ITERATOR ite:JSONPath(<http://example.com/museum.json>,"$[*]", "$.Artist") AS ?work ?artist
+      - in: "query"
+        name: "bindings"
+        description: "Initial binding set(s) to be used executing the SPARQL-Generate query(ies)"
+        required: false
+        schema:
+          $ref: "#/components/schemas/bindingSet"
+      responses:
+        200:
+          $ref: "#/components/responses/RDFGraph"
+    get:
+      summary: "Execute a SPARQL-Generate query"
+      description: "Execute a SPARQL-Generate query"
+      operationId: "execQueryPost"
+      parameters:
+      - in: "query"
+        name: "query"
+        description: "The SPARQL-Generate query(ies) to be executed"
+        required: false
+        content:
+          application/vnd.sparql-generate:
+            example: >
+              PREFIX ite: <http://w3id.org/sparql-generate/iter/>
+              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+              GENERATE {
+                <http://ex.com/{ REPLACE( ?artist , " " , "_" ) }>
+                  a crm:E21_Person;
+                  rdfs:label ?artist .
+              }
+              ITERATOR ite:JSONPath(?source,"$[*].Artist") AS ?artist
+      - in: "query"
+        name: "bindings"
+        description: "Initial binding set(s) to be used executing the SPARQL-Generate query(ies)"
+        required: false
+        schema:
+          $ref: "#/components/schemas/bindingSet"
+      responses:
+        200:
+          $ref: "#/components/responses/RDFGraph"
+components:
+  schemas:
+    bindingSet:
+      example:
+        source: "{\"pippo\": \"pluto\"}"
+        option: "paperino"
+  responses:
+    RDFGraph:
+      description: "Generated RDF Graph"
+      content:
+        text/turtle: {}
+externalDocs:
+  description: "Find out more about SPARQL-Generate"
+  url: "http://w3id.org/sparql-generate"
