@@ -6,6 +6,8 @@ In respect to [sparql-generate/sparql-generate-ws](https://github.com/sparql-gen
 
 It has been created to support [AudioCommons/semanticMediator](https://github.com/AudioCommons/semanticMediator).
 
+__Note__: in commands and URLs below the port 5050 is always used, but you are free to use the port that suits you.
+
 ## Run with Docker (recommended)
 
 ### Requirements
@@ -21,12 +23,12 @@ docker pull miguel76/sparql-generate
 
 Build container and launch it for the first time
 ```
-docker run -d -p 127.0.0.1:<port-number>:8080/tcp --name sparql-generate miguel76/sparql-generate
+docker run -d -p 127.0.0.1:5050:8080/tcp --name sparql-generate miguel76/sparql-generate
 ```
 
 ### Open documentation
 
-Open http://localhost:<port-number>/transform
+Open http://localhost:5050/
 
 ### Container management
 
@@ -42,7 +44,7 @@ docker start sparql-generate
 ### API
 
 - Endpoint
-http://localhost:<port-number>/transform
+http://localhost:5050/transform
 
 - Parameters
   - query: SPARQL-Generate query
@@ -62,4 +64,4 @@ http://localhost:<port-number>/transform
 
 ### Run
 
-`java -jar target/output-jar/sparql-generate-ws.jar <port-number>`
+`java -jar target/output-jar/sparql-generate-ws.jar 5050`
