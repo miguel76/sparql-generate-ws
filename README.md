@@ -44,7 +44,8 @@ http://localhost:5050/transform
 
 - Parameters
   - __query__: SPARQL-Generate query
-    Example:
+  
+    _Example:_
     ```
     PREFIX iter: <http://w3id.org/sparql-generate/iter/>
     GENERATE {?book a <http://schema.org/Book>}
@@ -52,7 +53,8 @@ http://localhost:5050/transform
     WHERE {}
     ```
   - __bindings__: initial variable bindings, as JSON
-    Example:
+  
+    _Example:_
     ```
     {
       "source": "{ \"books\": [ \"ModyDick\"] }"
