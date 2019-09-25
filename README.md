@@ -26,10 +26,6 @@ Build container and launch it for the first time
 docker run -d -p 127.0.0.1:5050:8080/tcp --name sparql-generate miguel76/sparql-generate
 ```
 
-### Open documentation
-
-Open http://localhost:5050/
-
 ### Container management
 
 Stop container
@@ -47,9 +43,21 @@ docker start sparql-generate
 http://localhost:5050/transform
 
 - Parameters
-  - query: SPARQL-Generate query
-  - bindings: intial variable bindings
-
+  - __query__: SPARQL-Generate query
+    Example:
+    ```
+    PREFIX iter: <http://w3id.org/sparql-generate/iter/>
+    GENERATE {?book a <http://schema.org/Book>}
+    ITERATOR iter:JSONPath(?source, "$.books.[*]") AS ?book
+    WHERE {}
+    ```
+  - __bindings__: initial variable bindings, as JSON
+    Example:
+    ```
+    {
+      "source": "{ \"books\": [ \"ModyDick\"] }"
+    }
+    ```
 
 ## Run Locally
 
@@ -60,8 +68,12 @@ http://localhost:5050/transform
 
 ### Build
 
-`mvn package`
+```
+mvn package
+```
 
 ### Run
 
-`java -jar target/output-jar/sparql-generate-ws.jar 5050`
+```
+java -jar target/output-jar/sparql-generate-ws.jar 5050
+```
