@@ -66,7 +66,6 @@ public class Transform extends HttpServlet {
     }
 
     protected void doGetOrPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-//      BufferedReader bodyReader = request.getReader();
         List<String> queries = new Vector<String>();
         List<String> queryUrls = new Vector<String>();
         List<String> documents = new Vector<String>();
@@ -92,9 +91,6 @@ public class Transform extends HttpServlet {
             }
           } catch(JSONException e) {
           }
-
-          // String[] queries, String[] queryurls,
-          // String[] documents, String[] bindings,
 
         } catch(JSONException e) {
         }
@@ -125,12 +121,7 @@ public class Transform extends HttpServlet {
           }
         }
 
-        doTransform(
-                queries, //.toArray(new String[0]),
-                queryUrls, //.toArray(new String[0]),
-                documents, //.toArray(new String[0]),
-                bindings, //.toArray(new JSONObject[0]),
-                response);
+        doTransform(queries, queryUrls, documents, bindings, response);
     }
 
     private void execQuery(Model model, String query, QuerySolution initialBindings) {
@@ -178,14 +169,7 @@ public class Transform extends HttpServlet {
     private void doTransform(
         Iterable<String> queries, Iterable<String> queryurls,
         Iterable<String> documents, Iterable<JSONObject> bindings,
-        // String[] queries, String[] queryurls,
-        // String[] documents, JSONObject[] bindings,
         HttpServletResponse response) throws IOException {
-
-      System.out.println("Queries: " + ((queries == null) ? "[]" : String.join(", ", queries)) + ".");
-      System.out.println("Queryurls: " + ((queryurls == null) ? "[]" : String.join(", ", queryurls)) + ".");
-      System.out.println("Documents: " + ((documents == null) ? "[]" : String.join(", ", documents)) + ".");
-      System.out.println("Bindings: " + ((bindings == null) ? "[]" : String.join(", ", bindings.toString())) + ".");
 
       final ExecutorService service = Executors.newSingleThreadExecutor();
       Model model = ModelFactory.createDefaultModel();
