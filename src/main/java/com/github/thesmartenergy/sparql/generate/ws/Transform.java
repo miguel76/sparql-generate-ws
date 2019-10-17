@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.Map;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -46,6 +47,7 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 /**
  *
@@ -64,12 +66,62 @@ public class Transform extends HttpServlet {
     }
 
     protected void doGetOrPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        doTransform(
-                request.getParameterValues("query"),
-                request.getParameterValues("queryurl"),
-                request.getParameterValues("document"),
-                request.getParameterValues("bindings"),
-                response);
+        List<String> queries = new Vector<String>();
+        List<String> queryUrls = new Vector<String>();
+        List<String> documents = new Vector<String>();
+        List<JSONObject> bindings = new Vector<JSONObject>();
+
+        try {
+          JSONObject bodyJSON = new JSONObject(new JSONTokener(request.getReader()));
+          try {
+            for (Object queryStr : bodyJSON.getJSONArray("queries")) {
+                queries.add((String) queryStr);
+            }
+          } catch(JSONException e) {
+          }
+          try {
+            for (Object queryUrlStr : bodyJSON.getJSONArray("queryurls")) {
+                queryUrls.add((String) queryUrlStr);
+            }
+          } catch(JSONException e) {
+          }
+          try {
+            for (Object bindingsJSON : bodyJSON.getJSONArray("bindings")) {
+                bindings.add((JSONObject) bindingsJSON);
+            }
+          } catch(JSONException e) {
+          }
+
+        } catch(JSONException e) {
+        }
+
+        String[] queryParams = request.getParameterValues("query");
+        String[] queryUrlParams = request.getParameterValues("queryurl");
+        String[] documentParams = request.getParameterValues("document");
+        String[] bindingsParams = request.getParameterValues("bindings");
+
+        if (queryParams != null) {
+          for (String queryParam: queryParams) {
+            queries.add(queryParam);
+          }
+        }
+        if (queryUrlParams != null) {
+          for (String queryUrlParam: queryUrlParams) {
+            queryUrls.add(queryUrlParam);
+          }
+        }
+        if (documentParams != null) {
+          for (String documentParam: documentParams) {
+            documents.add(documentParam);
+          }
+        }
+        if (bindingsParams != null) {
+          for (String bindingsStr: bindingsParams) {
+            bindings.add(new JSONObject(bindingsStr));
+          }
+        }
+
+        doTransform(queries, queryUrls, documents, bindings, response);
     }
 
     private void execQuery(Model model, String query, QuerySolution initialBindings) {
@@ -115,18 +167,18 @@ public class Transform extends HttpServlet {
     }
 
     private void doTransform(
-        String[] queries, String[] queryurls,
-        String[] documents, String[] bindings,
+        Iterable<String> queries, Iterable<String> queryurls,
+        Iterable<String> documents, Iterable<JSONObject> bindings,
         HttpServletResponse response) throws IOException {
+
       final ExecutorService service = Executors.newSingleThreadExecutor();
       Model model = ModelFactory.createDefaultModel();
       List<QuerySolutionMap> initialBindings = new LinkedList<QuerySolutionMap>();
 
       if (bindings != null) {
-        for (String bindingsStr: bindings) {
+        for (JSONObject bindingsJson: bindings) {
           QuerySolutionMap currBindings = new QuerySolutionMap();
           initialBindings.add(currBindings);
-          JSONObject bindingsJson = new JSONObject(bindingsStr);
           for (String key: bindingsJson.keySet()) {
             currBindings.add(key, jsonToRDFNode(bindingsJson.get(key), model));
           }
